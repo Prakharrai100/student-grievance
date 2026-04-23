@@ -1,10 +1,12 @@
 // ============================================================
 // server.js - Main entry point for the Express application
+// In production, also serves the React frontend (single deploy)
 // ============================================================
 
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const connectDB = require('./config/db');
 
 // Load environment variables from .env file
@@ -20,28 +22,37 @@ const app = express();
 // Parse incoming JSON requests
 app.use(express.json());
 
-// Enable Cross-Origin Resource Sharing (for React frontend)
+// Enable Cross-Origin Resource Sharing (needed for local dev with Vite proxy)
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: true,
   credentials: true
 }));
 
-// ── Routes ────────────────────────────────────────────────────
+// ── API Routes ───────────────────────────────────────────────
 // Auth routes: /api/register and /api/login
 app.use('/api', require('./routes/auth'));
 
 // Grievance routes (protected): full CRUD
 app.use('/api/grievances', require('./routes/grievances'));
 
-// ── Root Health Check ─────────────────────────────────────────
-app.get('/', (req, res) => {
-  res.json({ message: '🎓 Student Grievance API is running!' });
-});
+// ── Serve Frontend in Production ─────────────────────────────
+// After building the React app (npm run build), the output goes to frontend/dist
+// The backend serves those static files so everything runs on ONE URL
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files from the React build folder
+  app.use(express.static(path.join(__dirname, '..', 'frontend', 'dist')));
 
-// ── 404 Handler ───────────────────────────────────────────────
-app.use((req, res) => {
-  res.status(404).json({ message: 'Route not found' });
-});
+  // SPA Fallback: Any route that is NOT an /api route serves index.html
+  // This lets React Router handle client-side routing (/login, /dashboard, etc.)
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'dist', 'index.html'));
+  });
+} else {
+  // Dev-only health check (in production, / serves the React app)
+  app.get('/', (req, res) => {
+    res.json({ message: '🎓 Student Grievance API is running!' });
+  });
+}
 
 // ── Global Error Handler ──────────────────────────────────────
 app.use((err, req, res, next) => {

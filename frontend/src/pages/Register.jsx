@@ -4,12 +4,10 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 const Register = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   // Form state
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
@@ -21,9 +19,12 @@ const Register = () => {
     setError(''); // Clear error on change
   };
 
+  const [success, setSuccess] = useState('');
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
     // Basic client-side validation
     if (!formData.name || !formData.email || !formData.password) {
@@ -35,10 +36,10 @@ const Register = () => {
 
     setLoading(true);
     try {
-      // Create user and auto-login
-      const { data } = await api.post('/register', formData);
-      login(data); // Using auto-login behavior (register route sends JWT)
-      navigate('/dashboard');
+      // Register the user — redirect to login (no auto-login to avoid session issues on Render)
+      await api.post('/register', formData);
+      setSuccess('Account created! Redirecting to login...');
+      setTimeout(() => navigate('/login'), 1500);
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Try again.');
     } finally {
@@ -59,8 +60,9 @@ const Register = () => {
         <h2 className="auth-title">Create Account</h2>
         <p className="auth-subtitle">Sign up to file and track grievances</p>
 
-        {/* Error Alert */}
+        {/* Error / Success Alerts */}
         {error && <div className="alert alert-error" role="alert">{error}</div>}
+        {success && <div className="alert alert-success" role="status">{success}</div>}
 
         {/* Register Form */}
         <form onSubmit={handleSubmit} noValidate>
