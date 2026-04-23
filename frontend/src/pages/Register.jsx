@@ -41,7 +41,11 @@ const Register = () => {
       setSuccess('Account created! Redirecting to login...');
       setTimeout(() => navigate('/login'), 1500);
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Try again.');
+      if (!err.response) {
+        setError('Cannot reach backend service. Check API URL/CORS and try again.');
+      } else {
+        setError(err.response?.data?.message || 'Registration failed. Try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -130,3 +134,4 @@ const Register = () => {
 };
 
 export default Register;
+

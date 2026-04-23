@@ -31,7 +31,11 @@ const Login = () => {
       login(data); // Save user + JWT to context/localStorage
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Check your credentials.');
+      if (!err.response) {
+        setError('Cannot reach backend service. Check API URL/CORS and try again.');
+      } else {
+        setError(err.response?.data?.message || 'Login failed. Check your credentials.');
+      }
     } finally {
       setLoading(false);
     }
@@ -105,3 +109,4 @@ const Login = () => {
 };
 
 export default Login;
+

@@ -6,18 +6,22 @@
 import axios from 'axios';
 
 /**
- * Create a custom Axios instance
- * In production: backend serves frontend, so /api hits the same server (no CORS)
- * In development: Vite proxy routes /api → http://localhost:5000
+ * Create a custom Axios instance.
+ * Set VITE_API_BASE_URL in the frontend Render service.
+ * Example: https://student-grievance-pjww.onrender.com
  */
+const rawApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+const normalizedApiBaseUrl = rawApiBaseUrl
+  ? (rawApiBaseUrl.endsWith('/api') ? rawApiBaseUrl : `${rawApiBaseUrl.replace(/\/+$/, '')}/api`)
+  : 'https://student-grievance-pjww.onrender.com/api';
+
 const api = axios.create({
-  baseURL: 'https://student-grievance-1dltk.onrender.com/api',
+  baseURL: normalizedApiBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// ── Request Interceptor ────────────────────────────────────────
 // Automatically attach JWT from localStorage to every outgoing request
 api.interceptors.request.use(
   (config) => {
@@ -30,9 +34,8 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ── Response Interceptor ───────────────────────────────────────
 // Handle 401 Unauthorized globally (token expired / invalid)
-// ⚠️ FIX: Only redirect if NOT already on a public page — prevents infinite loop on Render
+// Only redirect if not already on a public page.
 const PUBLIC_PATHS = ['/login', '/register'];
 
 api.interceptors.response.use(
